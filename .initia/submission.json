@@ -1,7 +1,7 @@
 {
   "project_name": "KABOOM!",
   "repo_url": "https://github.com/penguinpecker/kaboom-initia",
-  "commit_sha": "6bf96bc80b812db701c9eee2db56b20b7f5b29ef",
+  "commit_sha": "c6b8b1f4ee6ad0d381ef8eb9318cd68c56b672df",
   "rollup_chain_id": "kaboom-1",
   "deployed_address": "0x9c1aF3D3741542019f3A3C6C33eD3638db07A18b",
   "vm": "evm",
