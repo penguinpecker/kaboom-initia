@@ -23,6 +23,10 @@ out
 frontend/out
 frontend/next-env.d.ts
 
+# deploy artifacts (contain validator key + bridge executor mnemonic — NEVER commit)
+deploy/minitia-state.tar.gz
+deploy/.railway/
+
 # misc
 dist
 .DS_Store
