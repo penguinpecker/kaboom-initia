@@ -1,0 +1,29 @@
+{
+  "l1_config": {
+    "chain_id": "initiation-2",
+    "rpc_url": "https://rpc.initiation-2.initia.xyz:443",
+    "gas_prices": "0.015uinit"
+  },
+  "l2_config": {
+    "chain_id": "kaboom-1",
+    "denom": "GAS",
+    "moniker": "kaboom"
+  },
+  "op_bridge": {
+    "output_submission_interval": "1h",
+    "output_finalization_period": "168h",
+    "output_submission_start_height": 1,
+    "batch_submission_target": "INITIA",
+    "enable_oracle": false
+  },
+  "system_keys": {
+    "bridge_executor": {
+      "mnemonic": "stove first sauce extra tower tiny chief brick bulk guilt fix idea pioneer tackle coconut play pave alien awesome iron boring ginger increase family",
+      "l1_address": "init1f8gfdchqhhcwve9rppgl5py9hezexkkwzy75et",
+      "l2_address": "init1f8gfdchqhhcwve9rppgl5py9hezexkkwzy75et"
+    }
+  },
+  "genesis_accounts": [
+    { "address": "init1tnjnx8q7vfj94wgrcdf6a27mgf9ta55x4wdwvs", "coins": "100000000000000GAS" }
+  ]
+}
