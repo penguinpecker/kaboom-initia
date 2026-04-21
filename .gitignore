@@ -1,0 +1,31 @@
+# deps
+node_modules
+frontend/node_modules
+
+# env secrets
+.env
+.env.*
+!.env.example
+frontend/.env.local
+frontend/.env*.local
+
+# hardhat / solidity
+artifacts
+cache
+typechain-types
+coverage
+coverage.json
+
+# next.js
+.next
+frontend/.next
+out
+frontend/out
+frontend/next-env.d.ts
+
+# misc
+dist
+.DS_Store
+*.log
+.vercel
+.turbo

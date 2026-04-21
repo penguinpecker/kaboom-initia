@@ -1,0 +1,12 @@
+{
+  "project_name": "KABOOM!",
+  "repo_url": "https://github.com/penguinpecker/kaboom-initia",
+  "commit_sha": "0000000000000000000000000000000000000000",
+  "rollup_chain_id": "kaboom-1",
+  "deployed_address": "0x9c1aF3D3741542019f3A3C6C33eD3638db07A18b",
+  "vm": "evm",
+  "native_feature": "auto-signing",
+  "core_logic_path": "contracts/Kaboom.sol",
+  "native_feature_frontend_path": "frontend/src/hooks/useGame.tsx",
+  "demo_video_url": "https://www.youtube.com/watch?v=PLACEHOLDER"
+}

@@ -1,0 +1,10 @@
+{
+  "address": "0x9c1aF3D3741542019f3A3C6C33eD3638db07A18b",
+  "houseAuthority": "0x5Ce5331c1e62645ab903c353AeABDb424AbED286",
+  "houseEdgeBps": 200,
+  "maxBetBps": 200,
+  "maxPayoutBps": 1000,
+  "network": "initia",
+  "chainId": 932743922545997,
+  "deployedAt": "2026-04-21T21:41:29.495Z"
+}
