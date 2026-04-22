@@ -6,7 +6,46 @@ import { InterwovenKitProvider } from "@initia/interwovenkit-react";
 import "@initia/interwovenkit-react/styles.css";
 
 import { wagmiConfig } from "@/lib/wagmi";
-import { INITIA_COSMOS_CHAIN_ID, initiaChain } from "@/lib/chain";
+import {
+  INITIA_COSMOS_CHAIN_ID,
+  INITIA_RPC,
+  INITIA_EVM_CHAIN_ID,
+  INITIA_CHAIN_PRETTY_NAME,
+} from "@/lib/chain";
+
+// InterwovenKitProvider.customChain wants a Cosmos-registry-shaped Chain
+// (chain_id/apis/fees/…), not a viem Chain. The destructure
+// `{rpc, rest, "json-rpc", indexer} = apis` inside the lib crashes if apis is
+// missing. We construct a minimal registry entry with apis populated.
+const initiaCosmosChain = {
+  chain_id: INITIA_COSMOS_CHAIN_ID,
+  chain_name: INITIA_COSMOS_CHAIN_ID,
+  pretty_name: INITIA_CHAIN_PRETTY_NAME,
+  network_type: "testnet",
+  bech32_prefix: "init",
+  fees: { fee_tokens: [{ denom: "GAS", fixed_min_gas_price: 0 }] },
+  staking: { staking_tokens: [{ denom: "GAS" }] },
+  apis: {
+    rpc: [{ address: INITIA_RPC }],
+    rest: [{ address: INITIA_RPC }],
+    "json-rpc": [{ address: INITIA_RPC }],
+    indexer: [{ address: INITIA_RPC }],
+  },
+  metadata: {
+    is_l1: false,
+    op_bridge_id: "1874",
+    executor_uri: INITIA_RPC,
+    ibc_channels: [],
+    minitia: { type: "minievm", version: "v1.2.15" },
+  },
+  logo_URIs: { png: "", svg: "" },
+  evm_chain_id: INITIA_EVM_CHAIN_ID,
+  // viem-friendly shorthands some code paths expect
+  chainId: INITIA_COSMOS_CHAIN_ID,
+  name: INITIA_CHAIN_PRETTY_NAME,
+  logoUrl: "",
+  rpcUrl: INITIA_RPC,
+};
 
 export default function Web3Provider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -20,7 +59,7 @@ export default function Web3Provider({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <InterwovenKitProvider
           defaultChainId={INITIA_COSMOS_CHAIN_ID}
-          customChain={initiaChain}
+          customChain={initiaCosmosChain as any}
         >
           {children}
         </InterwovenKitProvider>
