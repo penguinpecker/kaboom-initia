@@ -126,16 +126,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const kit = useInterwovenKit();
   const { writeContractAsync } = useWriteContract();
 
-  // Make sure the wallet is on kaboom-1 before we even try to sign. wagmi's
-  // useSwitchChain errors if the current wallet chain (e.g. Base 8453) is
-  // not in our wagmi `chains` config. Go direct to window.ethereum so it
-  // works regardless of what network the user started on.
+  // Make sure the wallet is on kaboom-1 before we sign. Goes direct to
+  // window.ethereum (bypasses wagmi) so the wallet physically switches, then
+  // polls until the injected provider reports the new chain id, so wagmi's
+  // internal state has time to resync before writeContract runs.
   const ensureChain = useCallback(async () => {
     if (walletChainId === INITIA_EVM_CHAIN_ID) return;
     await ensureInitiaChain();
-    // Fall through: let wagmi resync; the next tick of useChainId will
-    // surface the new chain id. writeContract will still pin chainId in
-    // the payload for safety.
+    const eth = (typeof window !== "undefined" ? (window as any).ethereum : null);
+    if (!eth) return;
+    const targetHex = "0x" + INITIA_EVM_CHAIN_ID.toString(16);
+    for (let i = 0; i < 20; i++) {
+      const cur = await eth.request({ method: "eth_chainId" });
+      if (typeof cur === "string" && cur.toLowerCase() === targetHex.toLowerCase()) return;
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    throw new Error("Wallet didn't switch to kaboom-1. Please switch manually and retry.");
   }, [walletChainId]);
 
   const walletAddress = address ?? null;
@@ -174,13 +180,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // through `any` here than fight the 7-way tuple inference.
   async function callContract(functionName: string, args: any[], value?: bigint): Promise<`0x${string}`> {
     await ensureChain();
+    // No chainId pin: wagmi uses whatever the connector reports now (kaboom-1
+    // after ensureChain resolved). Pinning chainId made wagmi compare against
+    // a stale cached connector-chain and throw ConnectorChainMismatchError
+    // before the wallet had finished switching.
     return await writeContractAsync({
       address: KABOOM_ADDRESS,
       abi: KABOOM_ABI,
       functionName,
       args,
       value,
-      chainId: INITIA_EVM_CHAIN_ID,
     } as any) as `0x${string}`;
   }
 
