@@ -3,6 +3,48 @@
 Provably fair 4×4 Mines with session-signed tile clicks via InterwovenKit.
 Built for the INITIATE hackathon, Season 1.
 
+**Live demo:** https://kaboom-initia.vercel.app
+**Rollup RPC:** `https://kaboom-rollup-production.up.railway.app` — chain id `932743922545997`, cosmos chain-id `kaboom-1`, OPinit bridge id `1874` on `initiation-2`
+**Contract:** `0x9c1aF3D3741542019f3A3C6C33eD3638db07A18b`
+
+---
+
+## Initia Hackathon Submission
+
+### Project Name
+**KABOOM!** — on-chain provably-fair Mines on Initia MiniEVM.
+
+### Project Overview
+Mines is one of the most-played CEX casino games of the past two years, yet every existing on-chain port is either custodial or RNG-opaque. KABOOM! is a self-sovereign Mines — every bet, reveal and payout lands on its own Initia MiniEVM rollup, and a commitment lock makes the house's secret mine layout publicly auditable after each round. Target users are crypto-native casino players who want provable fairness without giving up the fast-feeling UX of a centralised app. The twist that makes it worth building on Initia rather than on any L1/L2: InterwovenKit's auto-signing turns per-tile wallet popups into a single one-click grant, so playing feels like a web2 game with a web3 receipt.
+
+### Implementation Detail
+`contracts/Kaboom.sol` implements a full server-assisted commit-reveal: the server seeds a uint16 mine-layout bitmask + 32-byte salt, commits `keccak256(abi.encodePacked(uint16 mineLayout, uint8 mineCount, bytes32 salt))` on-chain at `startGame`, drives `revealTile(player, index, isMine)` per click, and finally `settleGame` re-derives the commitment and compares every revealed tile against the final layout — any cheating by the server causes settlement to revert. On-chain multiplier math uses a hypergeometric product `Π (16 − i) / (16 − mineCount − i)` in bps with a 2 % house edge, plus vault safety rails (`maxBet = 2 % of vault`, `maxPayout = 10 % of vault`, 5-minute `refundExpired` if the server stalls). Byte-for-byte commitment parity between viem's `encodePacked` and Solidity's `abi.encodePacked` is asserted in `test/CommitmentParity.test.ts`. 7/7 hardhat tests pass.
+
+### The Native Feature
+**Auto-signing** (`authz` + `feegrant`) via `@initia/interwovenkit-react@2.8.0`'s `kit.autoSign.enable()`. One tap on **Enable Session** asks the wallet to sign a single MsgGrant + MsgGrantAllowance for the `/cosmos.evm.vm.v1.MsgCall` and `/cosmos.evm.vm.v1.MsgCreate` message types, scoped to a session key for a chosen duration (10 min default). Every subsequent tile reveal and cash-out runs under that grant — no wallet round trip, no modal, no per-click gas from the user's hot wallet. This is the biggest UX gap Web3 gaming has, and Initia closes it natively rather than via app-level custody or off-chain signing services. Wiring: `frontend/src/hooks/useGame.tsx#enableAutoSign` → the **Enable Session** button in the top bar.
+
+### How to Run Locally
+```bash
+# 1. Deploy the contract (or connect to the live rollup).
+git clone https://github.com/penguinpecker/kaboom-initia && cd kaboom-initia
+cp .env.example .env                    # fill PRIVATE_KEY, INITIA_RPC_URL
+npm install && npx hardhat test         # 7/7 green
+npx hardhat run scripts/deploy.ts --network initia   # writes deployments/initia.json
+
+# 2. Run the frontend.
+cd frontend
+cp .env.local.example .env.local        # paste contract addr + HOUSE_AUTHORITY_KEY
+npm install && npm run dev              # → http://localhost:3000
+
+# 3. Connect wallet — InterwovenKit auto-adds kaboom-1 to MetaMask
+#    (chain id 932743922545997, RPC https://kaboom-rollup-production.up.railway.app).
+# 4. Click "Enable Session" → sign once → tiles click silently.
+```
+
+Full runbook incl. `minitiad launch --with-config scripts/launch-config.json` for spinning up your own rollup: `docs/deploy.md` + `.initia/ROLLUP.md`.
+
+---
+
 ```
                                     16 tiles
                                     ┌──────┐
