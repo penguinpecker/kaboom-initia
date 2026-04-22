@@ -6,6 +6,7 @@ import { InterwovenKitProvider } from "@initia/interwovenkit-react";
 import "@initia/interwovenkit-react/styles.css";
 
 import { wagmiConfig } from "@/lib/wagmi";
+import ChainGuard from "@/components/ChainGuard";
 import {
   INITIA_COSMOS_CHAIN_ID,
   INITIA_RPC,
@@ -64,6 +65,7 @@ export default function Web3Provider({ children }: { children: ReactNode }) {
           defaultChainId={INITIA_COSMOS_CHAIN_ID}
           customChain={initiaCosmosChain as any}
         >
+          <ChainGuard />
           {children}
         </InterwovenKitProvider>
       </QueryClientProvider>
