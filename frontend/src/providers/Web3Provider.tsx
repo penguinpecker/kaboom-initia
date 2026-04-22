@@ -3,7 +3,9 @@ import { ReactNode, useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InterwovenKitProvider } from "@initia/interwovenkit-react";
-import "@initia/interwovenkit-react/styles.css";
+// NOTE: InterwovenKit's CSS is imported from app/layout.tsx (root, server
+// component) because Next.js App Router skips CSS side-effects from
+// "use client" files in production builds.
 
 import { wagmiConfig } from "@/lib/wagmi";
 import ChainGuard from "@/components/ChainGuard";

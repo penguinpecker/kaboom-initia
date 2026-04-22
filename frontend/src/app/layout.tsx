@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+// InterwovenKit's modal CSS must be imported from the root (Server Component)
+// layout — Next.js App Router drops CSS imports from `"use client"` files in
+// prod, which made the connect modal render as raw unstyled DOM.
+import "@initia/interwovenkit-react/styles.css";
 import Web3Provider from "@/providers/Web3Provider";
 import { GameProvider } from "@/hooks/useGame";
 import { ModalProvider } from "@/hooks/useModal";
