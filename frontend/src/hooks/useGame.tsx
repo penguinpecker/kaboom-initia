@@ -8,6 +8,7 @@ import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { parseEther, formatEther } from "viem";
 
 import { KABOOM_ABI, KABOOM_ADDRESS, GAME_CONFIG, INITIA_EVM_CHAIN_ID } from "@/lib/chain";
+import { ensureInitiaChain } from "@/lib/switchChain";
 
 type GameStatus =
   | "idle" | "starting" | "playing" | "revealing"
@@ -125,14 +126,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const kit = useInterwovenKit();
   const { writeContractAsync } = useWriteContract();
 
-  // Make sure the wallet is on kaboom-1 before we even try to sign. If it's
-  // on Base/Ethereum/whatever, MetaMask would happily send a tx to a
-  // contract that doesn't exist there — then estimation fails and the user
-  // sees "likely to fail". Force-switch first.
+  // Make sure the wallet is on kaboom-1 before we even try to sign. wagmi's
+  // useSwitchChain errors if the current wallet chain (e.g. Base 8453) is
+  // not in our wagmi `chains` config. Go direct to window.ethereum so it
+  // works regardless of what network the user started on.
   const ensureChain = useCallback(async () => {
     if (walletChainId === INITIA_EVM_CHAIN_ID) return;
-    await switchChainAsync({ chainId: INITIA_EVM_CHAIN_ID });
-  }, [walletChainId, switchChainAsync]);
+    await ensureInitiaChain();
+    // Fall through: let wagmi resync; the next tick of useChainId will
+    // surface the new chain id. writeContract will still pin chainId in
+    // the payload for safety.
+  }, [walletChainId]);
 
   const walletAddress = address ?? null;
   const authenticated = isConnected;

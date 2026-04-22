@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 
 import { INITIA_EVM_CHAIN_ID, INITIA_CHAIN_PRETTY_NAME } from "@/lib/chain";
+import { ensureInitiaChain } from "@/lib/switchChain";
 
 /**
  * Auto-switches the wallet to kaboom-1 on connect, AND shows a visible
@@ -12,26 +13,23 @@ import { INITIA_EVM_CHAIN_ID, INITIA_CHAIN_PRETTY_NAME } from "@/lib/chain";
 export default function ChainGuard() {
   const { isConnected } = useAccount();
   const currentChainId = useChainId();
-  const { switchChainAsync } = useSwitchChain();
   const lastAskedRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isConnected) { lastAskedRef.current = null; return; }
     if (currentChainId === INITIA_EVM_CHAIN_ID) return;
-    // Only one prompt per (chain, time window). If user rejects, they can
-    // click the banner's Switch button to retry.
     if (lastAskedRef.current === currentChainId) return;
     lastAskedRef.current = currentChainId;
-    switchChainAsync({ chainId: INITIA_EVM_CHAIN_ID }).catch((e) => {
-      console.warn("ChainGuard: switch rejected", e?.shortMessage || e?.message || e);
+    ensureInitiaChain().catch((e) => {
+      console.warn("ChainGuard: switch rejected", e?.message || e);
     });
-  }, [isConnected, currentChainId, switchChainAsync]);
+  }, [isConnected, currentChainId]);
 
   if (!isConnected || currentChainId === INITIA_EVM_CHAIN_ID) return null;
 
   const onSwitch = () => {
     lastAskedRef.current = null;
-    switchChainAsync({ chainId: INITIA_EVM_CHAIN_ID }).catch(() => {});
+    ensureInitiaChain().catch(() => {});
   };
 
   return (
