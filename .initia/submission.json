@@ -8,5 +8,5 @@
   "native_feature": "auto-signing",
   "core_logic_path": "contracts/Kaboom.sol",
   "native_feature_frontend_path": "frontend/src/hooks/useGame.tsx",
-  "demo_video_url": "https://www.youtube.com/watch?v=PLACEHOLDER"
+  "demo_video_url": "https://youtu.be/A5WLc6O33vQ"
 }
