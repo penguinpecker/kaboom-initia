@@ -10,6 +10,15 @@ export const INITIA_RPC =
   process.env.NEXT_PUBLIC_INITIA_RPC_URL ||
   "https://jsonrpc-yominet-1.anvil.asia-southeast.initia.xyz";
 
+// Cosmos REST API (port 1317). InterwovenKit hits /cosmos/auth/...,
+// /cosmos/bank/..., etc. on this URL — distinct from the EVM JSON-RPC above.
+export const INITIA_REST =
+  process.env.NEXT_PUBLIC_INITIA_REST_URL || INITIA_RPC;
+
+// CometBFT RPC (port 26657). Some InterwovenKit code paths query block info.
+export const INITIA_COSMOS_RPC =
+  process.env.NEXT_PUBLIC_INITIA_COSMOS_RPC_URL || INITIA_REST;
+
 export const INITIA_EVM_CHAIN_ID = Number(
   process.env.NEXT_PUBLIC_INITIA_EVM_CHAIN_ID || "428962654539583",
 );

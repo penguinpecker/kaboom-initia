@@ -9,6 +9,8 @@ import { wagmiConfig } from "@/lib/wagmi";
 import {
   INITIA_COSMOS_CHAIN_ID,
   INITIA_RPC,
+  INITIA_REST,
+  INITIA_COSMOS_RPC,
   INITIA_EVM_CHAIN_ID,
   INITIA_CHAIN_PRETTY_NAME,
 } from "@/lib/chain";
@@ -26,15 +28,15 @@ const initiaCosmosChain = {
   fees: { fee_tokens: [{ denom: "GAS", fixed_min_gas_price: 0 }] },
   staking: { staking_tokens: [{ denom: "GAS" }] },
   apis: {
-    rpc: [{ address: INITIA_RPC }],
-    rest: [{ address: INITIA_RPC }],
+    rpc: [{ address: INITIA_COSMOS_RPC }],
+    rest: [{ address: INITIA_REST }],
     "json-rpc": [{ address: INITIA_RPC }],
-    indexer: [{ address: INITIA_RPC }],
+    indexer: [{ address: INITIA_REST }],
   },
   metadata: {
     is_l1: false,
     op_bridge_id: "1874",
-    executor_uri: INITIA_RPC,
+    executor_uri: INITIA_REST,
     ibc_channels: [],
     minitia: { type: "minievm", version: "v1.2.15" },
   },
@@ -45,6 +47,7 @@ const initiaCosmosChain = {
   name: INITIA_CHAIN_PRETTY_NAME,
   logoUrl: "",
   rpcUrl: INITIA_RPC,
+  restUrl: INITIA_REST,
 };
 
 export default function Web3Provider({ children }: { children: ReactNode }) {
