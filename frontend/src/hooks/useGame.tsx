@@ -3,11 +3,11 @@ import {
   createContext, useContext, useState, useCallback, useEffect, ReactNode,
   useMemo, useRef,
 } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useSwitchChain, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { parseEther, formatEther } from "viem";
 
-import { KABOOM_ABI, KABOOM_ADDRESS, GAME_CONFIG } from "@/lib/chain";
+import { KABOOM_ABI, KABOOM_ADDRESS, GAME_CONFIG, INITIA_EVM_CHAIN_ID } from "@/lib/chain";
 
 type GameStatus =
   | "idle" | "starting" | "playing" | "revealing"
@@ -120,8 +120,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // ── wallet plumbing ──
   const { address, isConnected } = useAccount();
+  const walletChainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
   const kit = useInterwovenKit();
   const { writeContractAsync } = useWriteContract();
+
+  // Make sure the wallet is on kaboom-1 before we even try to sign. If it's
+  // on Base/Ethereum/whatever, MetaMask would happily send a tx to a
+  // contract that doesn't exist there — then estimation fails and the user
+  // sees "likely to fail". Force-switch first.
+  const ensureChain = useCallback(async () => {
+    if (walletChainId === INITIA_EVM_CHAIN_ID) return;
+    await switchChainAsync({ chainId: INITIA_EVM_CHAIN_ID });
+  }, [walletChainId, switchChainAsync]);
 
   const walletAddress = address ?? null;
   const authenticated = isConnected;
@@ -158,12 +169,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // wagmi's writeContract has very tight ABI-generic types; easier to pass
   // through `any` here than fight the 7-way tuple inference.
   async function callContract(functionName: string, args: any[], value?: bigint): Promise<`0x${string}`> {
+    await ensureChain();
     return await writeContractAsync({
       address: KABOOM_ADDRESS,
       abi: KABOOM_ABI,
       functionName,
       args,
       value,
+      chainId: INITIA_EVM_CHAIN_ID,
     } as any) as `0x${string}`;
   }
 

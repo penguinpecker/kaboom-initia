@@ -2,32 +2,54 @@
 import { useEffect, useRef } from "react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 
-import { INITIA_EVM_CHAIN_ID } from "@/lib/chain";
+import { INITIA_EVM_CHAIN_ID, INITIA_CHAIN_PRETTY_NAME } from "@/lib/chain";
 
 /**
- * On wallet connect, if MetaMask (or any injected wallet) is on the wrong
- * chain, ask it to switch. wagmi's switchChainAsync calls
- * wallet_switchEthereumChain → if the chain is unknown the wallet falls back
- * to wallet_addEthereumChain, surfacing the "Add Network" prompt with our
- * RPC URL pre-filled.
+ * Auto-switches the wallet to kaboom-1 on connect, AND shows a visible
+ * banner if we're on the wrong chain and the auto-switch fails (e.g. the
+ * user rejected it).
  */
 export default function ChainGuard() {
   const { isConnected } = useAccount();
   const currentChainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
-  const askedRef = useRef(false);
+  const lastAskedRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isConnected) { askedRef.current = false; return; }
+    if (!isConnected) { lastAskedRef.current = null; return; }
     if (currentChainId === INITIA_EVM_CHAIN_ID) return;
-    if (askedRef.current) return;
-    askedRef.current = true;
+    // Only one prompt per (chain, time window). If user rejects, they can
+    // click the banner's Switch button to retry.
+    if (lastAskedRef.current === currentChainId) return;
+    lastAskedRef.current = currentChainId;
     switchChainAsync({ chainId: INITIA_EVM_CHAIN_ID }).catch((e) => {
-      console.warn("ChainGuard: switch failed", e?.shortMessage || e?.message || e);
-      // allow retry on next state change
-      askedRef.current = false;
+      console.warn("ChainGuard: switch rejected", e?.shortMessage || e?.message || e);
     });
   }, [isConnected, currentChainId, switchChainAsync]);
 
-  return null;
+  if (!isConnected || currentChainId === INITIA_EVM_CHAIN_ID) return null;
+
+  const onSwitch = () => {
+    lastAskedRef.current = null;
+    switchChainAsync({ chainId: INITIA_EVM_CHAIN_ID }).catch(() => {});
+  };
+
+  return (
+    <div
+      role="alert"
+      className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full bg-error text-on-error shadow-lg flex items-center gap-3 font-headline text-sm"
+    >
+      <span className="material-symbols-outlined mi" style={{ fontSize: 18 }}>
+        warning
+      </span>
+      <span>Wrong network — switch to <b>{INITIA_CHAIN_PRETTY_NAME}</b></span>
+      <button
+        type="button"
+        onClick={onSwitch}
+        className="ml-2 px-3 py-1 rounded-full bg-on-error text-error text-xs font-bold hover:opacity-90"
+      >
+        Switch
+      </button>
+    </div>
+  );
 }
