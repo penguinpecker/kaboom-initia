@@ -3,7 +3,7 @@ import {
   createContext, useContext, useState, useCallback, useEffect, ReactNode,
   useMemo, useRef,
 } from "react";
-import { useAccount, useChainId, useSwitchChain, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { parseEther, formatEther } from "viem";
 
@@ -125,6 +125,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const { switchChainAsync } = useSwitchChain();
   const kit = useInterwovenKit();
   const { writeContractAsync } = useWriteContract();
+  const pubClient = usePublicClient({ chainId: INITIA_EVM_CHAIN_ID });
 
   // Make sure the wallet is on kaboom-1 before we sign. Goes direct to
   // window.ethereum (bypasses wagmi) so the wallet physically switches, then
@@ -180,17 +181,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // through `any` here than fight the 7-way tuple inference.
   async function callContract(functionName: string, args: any[], value?: bigint): Promise<`0x${string}`> {
     await ensureChain();
-    // No chainId pin: wagmi uses whatever the connector reports now (kaboom-1
-    // after ensureChain resolved). Pinning chainId made wagmi compare against
-    // a stale cached connector-chain and throw ConnectorChainMismatchError
-    // before the wallet had finished switching.
-    return await writeContractAsync({
+    const hash = await writeContractAsync({
       address: KABOOM_ADDRESS,
       abi: KABOOM_ABI,
       functionName,
       args,
       value,
     } as any) as `0x${string}`;
+    // Wait for the receipt — if the tx reverted on-chain we need to surface
+    // it immediately so the frontend doesn't flip to "playing" for a game
+    // that isn't actually on-chain.
+    if (pubClient) {
+      const r = await pubClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+      if (r.status !== "success") {
+        throw new Error(`Transaction reverted on-chain (${functionName})`);
+      }
+    }
+    return hash;
   }
 
   // ── START GAME ───────────────────────────────────────────────────────────
@@ -283,9 +290,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: any) {
       console.error("Reveal failed:", err);
+      const msg = String(err?.message || "");
+      // On-chain game vanished (e.g. server auto-settled after a previous
+      // mine hit, or the startGame tx actually reverted). Clear the frontend
+      // so the user can start a new round instead of re-clicking into 500s.
+      const vanished = msg.toLowerCase().includes("reverted") || msg.toLowerCase().includes("not playing");
+      if (vanished) {
+        saveToken(null); gameTokenRef.current = null;
+      }
       setState(p => ({
-        ...p, pendingTile: null, status: "playing",
-        error: err?.message || "Reveal failed",
+        ...p, pendingTile: null,
+        status: vanished ? "idle" : "playing",
+        error: vanished
+          ? "Game expired on-chain. Start a new round."
+          : (err?.message || "Reveal failed"),
       }));
     }
   }, [state.status, state.pendingTile, state.revealedTiles, address]);
