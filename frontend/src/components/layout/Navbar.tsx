@@ -55,7 +55,7 @@ export function Navbar() {
 
   const handleConnect = () => {
     if (isConn) { open("profile"); return; }
-    try { (kit as any)?.onboard?.(); } catch {}
+    try { kit.openConnect(); } catch {}
   };
 
   return (

@@ -33,7 +33,7 @@ function WalletModal() {
     <ModalShell title="Connect Wallet">
       <p className="text-xs text-on-surface-variant mb-3">{INITIA_CHAIN_PRETTY_NAME}</p>
       <button
-        onClick={() => { try { (kit as any)?.onboard?.(); } catch {} close(); }}
+        onClick={() => { try { kit.openConnect(); } catch {} close(); }}
         className="w-full flex items-center gap-3 px-3 py-4 bg-surface-container-highest border border-outline-variant/10 hover:border-primary/25 hover:bg-primary/5 transition-all mb-2 group"
       >
         <div className="w-10 h-10 rounded bg-surface-bright flex items-center justify-center">
