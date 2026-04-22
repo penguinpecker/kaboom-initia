@@ -8,6 +8,7 @@ import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { parseEther, formatEther } from "viem";
 
 import { KABOOM_ABI, KABOOM_ADDRESS, GAME_CONFIG, INITIA_EVM_CHAIN_ID } from "@/lib/chain";
+import { BaseError, ContractFunctionRevertedError } from "viem";
 import { ensureInitiaChain } from "@/lib/switchChain";
 
 type GameStatus =
@@ -99,6 +100,39 @@ function calcMultiplier(safeReveals: number, mineCount: number): number {
     if (safeRemaining > 0) m *= remaining / safeRemaining;
   }
   return m * (1 - GAME_CONFIG.HOUSE_EDGE);
+}
+
+// Decode Kaboom's custom errors into readable strings so the user knows
+// *why* their startGame tx reverted rather than just "Transaction reverted".
+const ERROR_MESSAGES: Record<string, string> = {
+  BetExceedsMax: "Bet exceeds max (2% of vault). Lower the bet or reduce mine count.",
+  BetTooLow: "Bet is below the 0.001 INIT minimum.",
+  VaultInsufficient: "Bet + mine-count combo would allow a payout bigger than the vault can cover. Reduce bet or mine count.",
+  GameActive: "You already have an active game. Cash out or refund it first.",
+  VaultPausedErr: "Game is paused by the house.",
+  InvalidMineCount: "Mine count must be between 1 and 12.",
+  InvalidTileIndex: "Tile index out of range.",
+  TileAlreadyRevealed: "That tile is already revealed.",
+  GameNotPlaying: "No active game on-chain.",
+  CommitmentMismatch: "Server-side commitment mismatch (should never happen).",
+  NotHouse: "Only the house authority can call this.",
+};
+function extractRevertReason(err: unknown): string | null {
+  if (!err) return null;
+  const e = err as any;
+  // Plain string match (good enough for most cases)
+  const hay = (e?.shortMessage || e?.message || "") + " " + (e?.details || "") + " " + (e?.metaMessages || []).join(" ");
+  for (const k of Object.keys(ERROR_MESSAGES)) {
+    if (hay.includes(k)) return ERROR_MESSAGES[k];
+  }
+  // Viem structured walk
+  if (err instanceof BaseError) {
+    const rev = err.walk((x: unknown) => x instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;
+    const name = rev?.data?.errorName;
+    if (name && ERROR_MESSAGES[name]) return ERROR_MESSAGES[name];
+    if (name) return `Reverted: ${name}`;
+  }
+  return null;
 }
 
 // ─── server calls ─────────────────────────────────────────────────────────
@@ -236,7 +270,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }));
     } catch (err: any) {
       console.error("Start game failed:", err);
-      setState(p => ({ ...p, status: "idle", error: err?.shortMessage || err?.message || "Start failed" }));
+      const reason = extractRevertReason(err);
+      setState(p => ({ ...p, status: "idle", error: reason || err?.shortMessage || err?.message || "Start failed" }));
     }
   }, [authenticated, address, state.bet, state.mineCount, login]);
 
@@ -345,7 +380,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setGameHistory(loadHistory());
     } catch (err: any) {
       console.error("Cash out failed:", err);
-      setState(p => ({ ...p, status: "playing", error: err?.shortMessage || err?.message || "Cash out failed" }));
+      const reason = extractRevertReason(err);
+      setState(p => ({ ...p, status: "playing", error: reason || err?.shortMessage || err?.message || "Cash out failed" }));
     }
   }, [state.status, state.safeTiles, state.bet, state.multiplier, address]);
 
