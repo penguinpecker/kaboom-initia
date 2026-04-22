@@ -3,7 +3,7 @@
 Provably fair 4×4 Mines with session-signed tile clicks via InterwovenKit.
 Built for the INITIATE hackathon, Season 1.
 
-**Live demo:** https://kaboom-initia.vercel.app
+
 **Rollup RPC:** `https://kaboom-rollup-production.up.railway.app` — chain id `932743922545997`, cosmos chain-id `kaboom-1`, OPinit bridge id `1874` on `initiation-2`
 **Contract:** `0x9c1aF3D3741542019f3A3C6C33eD3638db07A18b`
 
