@@ -2,7 +2,7 @@
 import { ReactNode, useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { InterwovenKitProvider } from "@initia/interwovenkit-react";
+import { InterwovenKit, InterwovenKitProvider } from "@initia/interwovenkit-react";
 import "@initia/interwovenkit-react/styles.css";
 
 import { wagmiConfig } from "@/lib/wagmi";
@@ -67,6 +67,10 @@ export default function Web3Provider({ children }: { children: ReactNode }) {
         >
           <ChainGuard />
           {children}
+          {/* Mount InterwovenKit's modal/toast portal host. Without this, its
+              connect / autosign / bridge panels render inline into the page
+              flow instead of floating over it. */}
+          <InterwovenKit />
         </InterwovenKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
